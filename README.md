@@ -75,17 +75,17 @@ npm run dev
 ### PVE_TOKEN
 
 1. 在 PVE 网页界面打开「数据中心 → 权限 → 用户」，点击「添加」，创建专用用户，例如用户名 `dashboard`、领域 `Proxmox VE authentication server`，得到 `dashboard@pve`。
-2. 打开「数据中心 → 权限 → 角色」，点击「创建」，新建一个面板专用角色。权限选择 `Sys.Audit`、`VM.Audit`、`Datastore.Audit` 和 `Pool.Audit`；如需在面板中操作 VM/LXC 电源，再选择 `VM.PowerMgmt`。
-3. 打开「数据中心 → 权限」，点击「添加 → 用户权限」，路径选 `/`，用户选 `dashboard@pve`，角色选刚创建的角色，勾选「传播」。这样会将所选权限应用于整个集群。
+2. 打开「数据中心 → 权限」，添加用户权限：用户选择 `dashboard@pve`，角色选择内置的 `PVEAuditor`。监控整个集群时路径选择 `/` 并勾选「继承」。
+3. 如需电源管理，在「权限 → 角色」创建 `DashboardPower`，仅选择 `VM.PowerMgmt`；再为 ``dashboard@pve` 添加该角色。
 4. 打开「数据中心 → 权限 → API 令牌」，点击「添加」，用户选 `dashboard@pve`，令牌 ID 填 `dashboard`，取消勾选「权限分离」，然后点击「添加」。保存弹窗中只显示一次的 Secret。
 
-令牌使用已授予该用户的权限。完整的 `PVE_TOKEN` 由用户、令牌 ID 和 Secret 组成，格式如下：
+最终得到的 PVE_TOKEN 如下：
 
 ```text
 dashboard@pve!dashboard=TOKEN_SECRET
 ```
 
-把这个完整值填入上面的 Caddy 配置，或本地开发的 `PVE_DASHBOARD_TOKEN`；`PVEAPIToken=` 前缀已由代理添加。Token 保存在服务端。PVE 的权限与 Token 规则见[官方用户管理文档](https://github.com/proxmox/pve-docs/blob/master/pveum.adoc)。
+将此值填入 Caddy 服务环境或本地开发的 `PVE_DASHBOARD_TOKEN` 即可。
 
 ### VM 分组
 
@@ -94,6 +94,14 @@ Lite Dashboard 的 VM/LXC 分组对应 PVE 的 **Resource Pool（资源池）**�
 1. 在 PVE 网页界面打开「数据中心 → 权限 → 资源池」，点击「创建」。
 2. 填写资源池 ID，例如 `development`；在注释中填写说明，例如 `开发环境`，然后保存。
 3. 在左侧资源树中选择刚创建的资源池，打开「成员」，点击「添加」，选择要放入该组的 VM 或容器。
-4. 返回 Lite Dashboard，刷新页面。资源池 ID `development` 会成为分组标题，注释 `开发环境` 显示在标题旁，池中的 VM/LXC 显示在该组。
+4. 返回 Lite Dashboard 刷新页面即可看到结果。
 
-未加入资源池的实例归入「未分配资源池」，模板归入独立的「模板」组。读取资源池及成员需要相应的 `Pool.Audit` 和 `VM.Audit` 权限。
+未加入资源池的实例归入「未分配资源池」，模板归入独立的「模板」组。
+
+### 安全说明
+
+本项目不设置权限管理功能，任何能访问面板的人，都可以获取 API TOKEN 的所有权限，请在安全环境中使用，并确保生成的 API TOKEN 的权限最小化。
+
+## 许可证
+
+本项目使用 [MIT 许可证](LICENSE)。

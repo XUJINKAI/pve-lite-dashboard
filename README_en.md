@@ -18,6 +18,8 @@ The dashboard discovers resources through the PVE API using the permissions of a
 
 ## Try the demo
 
+Use Node.js 22.12+ (22.x) or 24+.
+
 ```bash
 npm ci
 npm run dev
@@ -73,7 +75,11 @@ PVE_DASHBOARD_TOKEN=dashboard@pve!dashboard=TOKEN_SECRET
 
 `handle_path` removes `/api`, so PVE receives `/api2/json/...`. The certificate option accommodates a self-signed PVE certificate; remove it when Caddy trusts that certificate.
 
-Anyone who can reach the API proxy can exercise the token's permissions. Restrict access to a trusted LAN, VPN, or an authenticated gateway, and give the token only the permissions needed. The token stays on the proxy server.
+## Security boundary
+
+Anyone who can reach the Dashboard `/api/` proxy can exercise the token's permissions, including VM/LXC power operations when `VM.PowerMgmt` is granted. Restrict the entire site and `/api/` to a trusted LAN, VPN, or authenticated gateway. The Caddy example serves files and forwards API requests; configure access restrictions for your deployment.
+
+Use a dedicated account and scope ACL paths and power permissions to the resources you need. UI filters and hidden buttons only affect presentation; PVE ACLs enforce authorization. Keep the token on the proxy server and use placeholders or demo data in public source files and screenshots. See [Installation](docs/INSTALL.md) for the Caddy service environment setup.
 
 ## Local development with PVE
 
@@ -101,8 +107,8 @@ npm run dev -- --host 0.0.0.0
 ## PVE setup
 
 1. In **Datacenter → Permissions → Users**, create a dedicated user, such as `dashboard@pve`.
-2. In **Permissions → Roles**, create a role with `Sys.Audit`, `VM.Audit`, `Datastore.Audit`, and `Pool.Audit`. Add `VM.PowerMgmt` if power controls are needed.
-3. Assign the role to the user at the desired scope. Assigning it at `/` with propagation covers the cluster; choose narrower VM or pool paths when appropriate.
+2. Add a user permission with the built-in `PVEAuditor` role, which provides the Audit privileges needed for monitoring. Use `/` with propagation for cluster-wide monitoring, or choose narrower VM or pool paths.
+3. For power controls, create a `DashboardPower` role containing only `VM.PowerMgmt`. Assign it to the same user on the target `/vms/<vmid>` or `/pool/<poolid>` path, enabling propagation for pools. Keep `PVEAuditor` alongside it when assigning both roles at the same path.
 4. In **Permissions → API Tokens**, create a token for that user. For this dedicated, permission-limited user, uncheck **Privilege Separation** so the token uses the user's permissions. Save the secret shown during creation.
 
 The full token value is `USER@REALM!TOKEN_ID=TOKEN_SECRET`. The proxy adds the `PVEAPIToken=` prefix. With privilege separation enabled, configure token ACLs as well.
@@ -141,3 +147,7 @@ npm run test:e2e
 Playwright uses the production preview server. Review expected visual changes before updating screenshot baselines with `npm run test:visual:update`.
 
 Implementation and deployment details are documented in [Architecture](docs/ARCHITECTURE.md), [Design](docs/DESIGN.md), and [Installation](docs/INSTALL.md) (Chinese).
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).

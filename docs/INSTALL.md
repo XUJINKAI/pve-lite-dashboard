@@ -1,6 +1,6 @@
 # 安装与部署
 
-本文说明如何为 PVE Lite Dashboard 创建最小权限账号与 API Token，并使用 Caddy 安全代理 PVE API。
+本文说明如何为 PVE Lite Dashboard 配置专用账号、监控角色与 API Token，并使用 Caddy 安全代理 PVE API。
 
 ## 工作方式
 
@@ -10,10 +10,11 @@ Browser → /api/api2/json/... → Caddy 注入 Token → PVE :8006
 
 ## 构建前端
 
-项目使用 TypeScript 与 Vite 构建静态产物。首次部署或代码更新时执行：
+项目使用 TypeScript 与 Vite 构建静态产物，开发环境使用 Node.js 22.12+（22.x）或 24+。首次部署或代码更新时执行：
 
 ```bash
 npm ci
+npx playwright install chromium
 npm run verify
 ```
 
@@ -34,7 +35,7 @@ PVE_DASHBOARD_TOKEN=dashboard@pve!dashboard=TOKEN_SECRET
 
 Token 只由开发服务器读取。变量名保持 `PVE_DASHBOARD_` 前缀，不使用会暴露到浏览器代码中的 `VITE_` 前缀。开发代理允许 PVE 默认的自签名证书；正式部署使用下文的 Caddy 配置。
 
-## 创建最小权限账号
+## 配置监控权限
 
 在 PVE Shell 中创建专用用户：
 
@@ -43,48 +44,72 @@ pveum user add dashboard@pve \
   --comment "PVE Lite Dashboard"
 ```
 
-创建 Dashboard 所需的最小角色：
+使用内置角色 `PVEAuditor`，由 PVE 提供包括 `Sys.Audit`、`VM.Audit`、`Datastore.Audit` 和 `Pool.Audit` 在内的读取权限。角色与 ACL 规则见 [PVE 官方用户管理文档](https://github.com/proxmox/pve-docs/blob/master/pveum.adoc)。
+
+### 监控整个集群
 
 ```bash
-pveum role add PVELiteDashboard \
-  -privs "Sys.Audit VM.Audit VM.PowerMgmt"
-```
-
-这些权限分别用于读取 Node、读取 VM/LXC，以及执行 Start、Shutdown、Reboot、Suspend 和 Resume。Dashboard 不提供删除、配置、迁移等操作。
-
-### 授权整个集群
-
-```bash
-pveum aclmod / \
+pveum acl modify / \
   -user dashboard@pve \
-  -role PVELiteDashboard
-```
-
-### 只授权指定 VM
-
-```bash
-pveum aclmod /vms/63 \
-  -user dashboard@pve \
-  -role PVELiteDashboard
-```
-
-### 使用资源池授权
-
-Dashboard 能识别 `/pool/{poolid}` 上向成员传播的 `VM.PowerMgmt`。要让资源池和成员关系可见，还需要 `Pool.Audit`：
-
-```bash
-pveum role add PVELitePoolDashboard \
-  -privs "Pool.Audit VM.Audit VM.PowerMgmt"
-
-pveum aclmod /pool/my-pool \
-  -user dashboard@pve \
-  -role PVELitePoolDashboard \
+  -role PVEAuditor \
   -propagate 1
 ```
 
+### 监控指定资源
+
+需要限制可见范围时，选择对应路径授权。例如仅监控 VM 63：
+
+```bash
+pveum acl modify /vms/63 \
+  -user dashboard@pve \
+  -role PVEAuditor \
+  -propagate 1
+```
+
+或监控资源池及其成员：
+
+```bash
+pveum acl modify /pool/my-pool \
+  -user dashboard@pve \
+  -role PVEAuditor \
+  -propagate 1
+```
+
+这些是读取范围的不同选择；根路径 `/` 上传播的授权覆盖整个集群。VM 或资源池范围的授权只提供相应资源的可见性；物理节点和存储信息需要对应路径上的读取权限。
+
+### 可选：VM/LXC 电源管理
+
+需要启动、关闭、强制停止、重启、暂停或恢复实例时，创建仅含 `VM.PowerMgmt` 的角色：
+
+```bash
+pveum role add DashboardPower -privs "VM.PowerMgmt"
+```
+
+将读取和电源角色一起授予指定 VM：
+
+```bash
+pveum acl modify /vms/63 \
+  -user dashboard@pve \
+  -role PVEAuditor,DashboardPower \
+  -propagate 1
+```
+
+或授权给资源池及其成员：
+
+```bash
+pveum acl modify /pool/my-pool \
+  -user dashboard@pve \
+  -role PVEAuditor,DashboardPower \
+  -propagate 1
+```
+
+需要对整个集群执行电源操作时，将授权路径设为 `/`。在同一路径配置多个角色时保留完整角色列表。`PVEAuditor` 用于读取，`DashboardPower` 用于电源控制；前端依据 PVE 返回的有效权限显示按钮。
+
+部分详情接口还取决于 PVE 版本、额外权限或 Guest Agent 状态。读取失败时页面保留成功的数据并展示对应错误，按具体接口检查所需权限。
+
 ## 创建 API Token
 
-对已经限制权限的专用用户，可以创建非 privilege-separated Token：
+对已经限定权限的专用用户，使用 `--privsep 0` 让 Token 继承该用户的权限：
 
 ```bash
 pveum user token add dashboard@pve dashboard \
@@ -120,6 +145,8 @@ curl -k \
 ## 配置 Caddy
 
 将项目部署到例如 `/srv/pve-lite-dashboard`，并让 Caddy 指向构建后的 `dist/` 目录。
+
+任何能访问 `/api/` 代理的人都能使用 Token 的权限，包括已授权的 VM/LXC 电源操作。应通过可信 LAN、VPN 或认证网关限制整个站点和 `/api/` 的访问。以下示例提供静态文件和 API 转发，访问限制需要按部署环境配置。界面中的资源筛选和按钮显隐只影响展示，实际授权由 PVE ACL 执行。
 
 示例 Caddy 配置：
 

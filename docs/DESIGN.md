@@ -149,6 +149,8 @@ resources: {
 
 ## 6. 权限模型
 
+部署账号使用内置 `PVEAuditor` 角色读取监控数据；需要电源操作时，在目标 VM 或资源池路径叠加仅含 `VM.PowerMgmt` 的 `DashboardPower` 角色。读取与操作范围由 PVE ACL 路径和传播设置决定，配置示例见[安装文档](INSTALL.md#配置监控权限)。
+
 有效权限来自：
 
 ```text
