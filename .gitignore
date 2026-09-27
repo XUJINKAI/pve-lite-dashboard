@@ -1,0 +1,12 @@
+node_modules/
+dist/
+tests/report/
+tests/results/
+tests/coverage/
+.vite/
+/.env*
+!/.env.example
+
+.agents/
+.codex/
+pve-vm-configs-*.txt

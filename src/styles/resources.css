@@ -1,0 +1,230 @@
+/* Shared resource surfaces, typography, metrics and details. */
+
+:root {
+  --resource-name-size: 14px;
+  --resource-text-size: 12px;
+  --resource-padding: 12px;
+  --resource-detail-gap: 12px 24px;
+  --resource-detail-line: color-mix(in srgb, var(--line) 30%, transparent);
+}
+
+.resource-block,
+.pool-section {
+  min-width: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.block-title,
+.pool-heading {
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px var(--resource-padding);
+  border-radius: var(--radius);
+  background: var(--group-bg);
+}
+
+.block-title,
+.pool-heading {
+  margin: 0;
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.pool-heading.expanded,
+.resource-block:has(.block-title[aria-expanded="true"]) > .block-title,
+.pool-heading {
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.block-title-heading h2,
+.pool-title h2 {
+  min-width: 0;
+  margin: 0;
+  font-size: var(--resource-name-size);
+}
+
+.identity-copy strong,
+.compact-title strong,
+.device-row > strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: var(--resource-name-size);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guest-card + .guest-card,
+.storage-row + .storage-row,
+.device-row + .device-row,
+.compact-card + .compact-card {
+  border-top: 1px solid var(--line);
+}
+
+.guest-card:last-child,
+.device-list > :last-child,
+.storage-list > :last-child {
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.detail-info,
+.node-details,
+.storage-details {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: var(--resource-detail-gap);
+}
+
+.guest-details,
+.node-details,
+.storage-details {
+  border-top: 1px solid var(--resource-detail-line);
+  background: var(--panel);
+}
+
+.detail-info > *,
+.node-details > *,
+.storage-details > *,
+.storage-row > *,
+.device-row > * {
+  min-width: 0;
+}
+
+.detail-item {
+  display: grid;
+  gap: 1px;
+}
+
+.detail-item small,
+.detail-item strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--resource-text-size);
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-item small {
+  color: var(--muted);
+}
+
+.metric,
+.mini-metric {
+  display: block;
+  min-width: 0;
+}
+
+.metric-head,
+.mini-head {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 5px;
+  margin-bottom: 3px;
+}
+
+.metric-label {
+  color: var(--muted);
+  font-size: var(--resource-text-size);
+}
+
+.mobile-metric-label {
+  display: none;
+}
+
+.metric-value,
+.mini-head strong {
+  overflow: hidden;
+  font-size: var(--resource-text-size);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress {
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--progress-track);
+}
+
+.progress-bar {
+  display: block;
+  width: var(--value);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--success);
+  transition: width .25s;
+}
+
+.progress-bar.warning {
+  background: var(--warning);
+}
+
+.progress-bar.critical {
+  background: var(--danger);
+}
+
+.progress-bar.paused {
+  background: var(--offline);
+}
+
+
+.disk-card + .disk-card {
+  border-top: 1px solid var(--line);
+}
+
+.disk-summary {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: var(--resource-padding);
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--resource-text-size);
+  text-align: left;
+  cursor: pointer;
+}
+
+.disk-summary strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: var(--resource-name-size);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.disk-details {
+  padding: var(--resource-padding);
+  border-top: 1px solid var(--resource-detail-line);
+}
+
+@media (max-width: 720px) {
+  .disk-summary {
+    grid-template-columns: 16px minmax(0, 1fr) auto auto;
+    gap: 6px 8px;
+  }
+
+  .disk-summary strong { grid-column: 2 / -1; }
+  .disk-summary .disk-size { grid-column: 2; }
+}

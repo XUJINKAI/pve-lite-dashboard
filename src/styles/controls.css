@@ -1,0 +1,364 @@
+/* ========================================================================== */
+/* 状态标签、按钮、菜单和对话框                                                */
+/* ========================================================================== */
+
+.badge {
+  display: inline-flex;
+  width: max-content;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.status-icon,
+.status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--offline);
+}
+
+.status-icon.running,
+.status-icon.online,
+.status-dot.running,
+.status-dot.online {
+  background: var(--success);
+}
+
+.status-icon.suspended,
+.status-dot.suspended {
+  border-radius: 2px;
+  background: #718096;
+}
+
+.badge.suspended {
+  color: #718096;
+}
+
+.status-icon.template {
+  background: #8a849d;
+}
+
+.badge.template {
+  color: #8a849d;
+}
+
+.status-icon.stopped,
+.status-icon.offline,
+.status-dot.offline {
+  background: var(--offline);
+}
+
+.btn {
+  min-height: 25px;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--text);
+  background: var(--soft);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+}
+
+.btn:disabled {
+  opacity: .5;
+}
+
+.btn.danger,
+.btn.danger-ghost:hover:not(:disabled),
+.action-menu-item.danger-ghost {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--line));
+}
+
+.action-primary,
+.action-menu-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.action-icon {
+  display: inline-flex;
+  width: 13px;
+  height: 13px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.action-menu {
+  position: relative;
+}
+
+.action-menu > summary {
+  list-style: none;
+}
+
+.action-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.action-menu-toggle.disabled {
+  pointer-events: none;
+  opacity: .5;
+}
+
+.action-menu-list {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 4px);
+  z-index: 20;
+  display: grid;
+  min-width: 112px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.action-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 5px;
+  color: var(--text);
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+}
+
+.action-menu-item:hover:not(:disabled) {
+  background: var(--soft);
+}
+
+.action-menu-item:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+.empty {
+  padding: 38px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 26px;
+}
+
+.empty h2 {
+  margin: 5px 0;
+  font-size: 13px;
+}
+
+.empty p {
+  margin: 0;
+  font-size: 9px;
+}
+
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+dialog {
+  width: min(390px, calc(100vw - 28px));
+  max-height: calc(100dvh - 28px);
+  overscroll-behavior: contain;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  color: var(--text);
+  background: var(--panel);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .3);
+}
+
+dialog::backdrop {
+  background: rgba(5, 8, 15, .45);
+  backdrop-filter: blur(3px);
+}
+
+.dialog-card {
+  padding: 19px;
+  text-align: center;
+}
+
+.dialog-card h3 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.dialog-card p {
+  margin: 5px 0 17px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.dialog-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 9px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 11%, transparent);
+  font-weight: 800;
+}
+
+.dialog-icon.shield {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.permission-dialog-card {
+  text-align: left;
+}
+
+.permission-dialog-card > h3 {
+  text-align: center;
+}
+
+.permissions-content {
+  max-height: 55vh;
+  overflow: auto;
+  margin: 13px 0;
+}
+
+.ip-list {
+  display: grid;
+  gap: 5px;
+}
+
+.ip-row {
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--text);
+  background: var(--soft);
+  font-size: 12px;
+  text-align: left;
+}
+
+#permissions-dialog {
+  width: min(1180px, calc(100vw - 28px));
+}
+
+#permissions-dialog .permissions-content {
+  max-height: min(65dvh, 720px);
+}
+
+#permissions-dialog .dialog-card {
+  padding: 24px;
+}
+
+#permissions-dialog .dialog-card h3 {
+  font-size: 16px;
+}
+
+#permissions-dialog .permission-table {
+  font-size: 12px;
+}
+
+.permission-table-wrap {
+  max-width: 100%;
+  overflow: auto;
+  margin: 13px 0;
+}
+
+.permission-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.permission-table th,
+.permission-table td {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  text-align: center;
+}
+
+.permission-table thead th {
+  color: var(--muted);
+  background: var(--soft);
+  font-weight: 650;
+}
+
+.permission-table .permission-path {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 120px;
+  color: var(--accent);
+  background: var(--panel);
+  text-align: left;
+}
+
+.permission-table thead .permission-path {
+  background: var(--soft);
+}
+
+.permission-granted {
+  color: var(--success);
+  font-weight: 800;
+}
+
+#guest-config-dialog {
+  width: min(820px, calc(100vw - 28px));
+}
+
+.config-dialog-card {
+  min-width: 0;
+}
+
+.config-dialog-card h3 {
+  overflow-wrap: anywhere;
+}
+
+.config-text {
+  max-height: 60vh;
+  overflow: auto;
+  margin: 16px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-size: var(--resource-text-size);
+  line-height: 1.6;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
