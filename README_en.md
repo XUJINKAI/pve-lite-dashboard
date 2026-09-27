@@ -2,34 +2,17 @@
 
 [简体中文](README.md)
 
-A lightweight Proxmox VE dashboard built with Vue and TypeScript. One page shows node and guest status and provides common VM/LXC power controls.
+A lightweight Proxmox VE dashboard without a backend. A single page displays node and VM status and provides VM power management.
 
-The dashboard discovers resources through the PVE API using the permissions of a dedicated API token. Caddy serves the static build and injects the token into same-origin API requests.
+Once the API token and address are configured, the dashboard automatically discovers the nodes and virtual machines it has permission to access and displays their status.
 
-## Features
+Features:
 
-- Nodes, storage, physical disks, network interfaces, and the latest successful backup task.
-- VM/LXC CPU, memory, IP addresses, disk usage, and network traffic.
-- Start, shutdown, force stop, reboot, suspend, and resume controls, subject to permissions and guest state.
-- Resource pool grouping, template grouping, collapsible details, and resource filters.
-- Full guest configuration viewing and batch export to a TXT file.
-- API permission matrix, Chinese and English interfaces, and responsive layouts.
-- Browser-local settings and a built-in demo with fictional data.
-
-## Try the demo
-
-Use Node.js 22.12+ (22.x) or 24+.
-
-```bash
-npm ci
-npm run dev
-```
-
-Open `http://127.0.0.1:4173/?data=mock`.
-
-The demo includes eight guests covering running and stopped VMs and containers, a suspended VM, and a cloud template, plus storage, NVMe/SATA disks, multiple IP addresses, and an empty pool. Demo power actions affect the current page session; reloading restores the initial data.
-
-With the default `auto` data source, GitHub Pages uses demo data. Other hosts use the live API. You can select the data source in Settings or use `?data=mock` / `?data=live`.
+- Physical infrastructure: node information, storage information, physical disks, network lists, and recent backups
+- Virtual machines: CPU, memory, IP addresses, disk usage, network traffic, and more
+- Power management buttons for virtual machines with the required permissions, supporting start, stop, pause, resume, and more
+- View VM configurations or export a summary of all VM configurations through Settings
+- View a table of the current API token's permissions
 
 ## How it works
 
@@ -38,25 +21,26 @@ Browser → same-origin /api/api2/json/... → Caddy → PVE :8006
                                          injects API token
 ```
 
-PVE supplies resource membership, permissions, and task results. Settings control presentation and are stored in the current browser's localStorage. The default foreground refresh interval is five seconds. Node details and backup history refresh every 60 seconds during resource polling; manual refresh also updates them.
+The page sends requests to the local `/api` path. The server injects the PVE token and forwards the API requests to the PVE address.
 
 ## Build and deploy with Caddy
+
+Install dependencies and generate the static files:
 
 ```bash
 npm ci
 npm run build
 ```
 
-Deploy the contents of `dist/`, for example to `/srv/pve-lite-dashboard/dist`, and configure Caddy:
+Build output is placed in `dist/`. Assuming the deployment path is `/srv/pve-lite-dashboard/dist`, configure Caddy as follows:
 
 ```caddy
-pve-dashboard.example.com {
+pve.domain {
     root * /srv/pve-lite-dashboard/dist
 
     handle_path /api/* {
         reverse_proxy https://PVE_ADDRESS:8006 {
-            header_up -Cookie
-            header_up Authorization "PVEAPIToken={env.PVE_DASHBOARD_TOKEN}"
+            header_up Authorization "PVEAPIToken=PVE_TOKEN"
             transport http {
                 tls_insecure_skip_verify
             }
@@ -67,86 +51,56 @@ pve-dashboard.example.com {
 }
 ```
 
-Replace the domain, deployment path, and PVE address. Supply `PVE_DASHBOARD_TOKEN` through the Caddy service environment:
+Replace the site domain, `dist` path, PVE_ADDRESS, and PVE_TOKEN to match your environment.
 
-```dotenv
-PVE_DASHBOARD_TOKEN=dashboard@pve!dashboard=TOKEN_SECRET
-```
+`handle_path` removes the `/api` prefix, so when the page requests `/api/api2/json/cluster/resources`, PVE receives `/api2/json/cluster/resources`. The example uses `tls_insecure_skip_verify` for PVE's default self-signed certificate; if Caddy already trusts the PVE certificate, you can remove this configuration.
 
-`handle_path` removes `/api`, so PVE receives `/api2/json/...`. The certificate option accommodates a self-signed PVE certificate; remove it when Caddy trusts that certificate.
-
-## Security boundary
-
-Anyone who can reach the Dashboard `/api/` proxy can exercise the token's permissions, including VM/LXC power operations when `VM.PowerMgmt` is granted. Restrict the entire site and `/api/` to a trusted LAN, VPN, or authenticated gateway. The Caddy example serves files and forwards API requests; configure access restrictions for your deployment.
-
-Use a dedicated account and scope ACL paths and power permissions to the resources you need. UI filters and hidden buttons only affect presentation; PVE ACLs enforce authorization. Keep the token on the proxy server and use placeholders or demo data in public source files and screenshots. See [Installation](docs/INSTALL.md) for the Caddy service environment setup.
-
-## Local development with PVE
+## Local development
 
 Create `.env.local` in the project root:
 
 ```dotenv
 PVE_DASHBOARD_URL=https://PVE_ADDRESS:8006
-PVE_DASHBOARD_TOKEN=dashboard@pve!dashboard=TOKEN_SECRET
+PVE_DASHBOARD_TOKEN=PVE_TOKEN
 ```
+
+Then run:
 
 ```bash
 npm run dev
 ```
 
-Open `http://127.0.0.1:4173/`. Vite proxies `/api/` and injects the token. Restart the development server after changing `.env.local`.
-
-Development listens on localhost by default. For access from a trusted local network, explicitly run:
-
-```bash
-npm run dev -- --host 0.0.0.0
-```
-
-`.env.local` is ignored by Git. Production builds do not load the `PVE_DASHBOARD_` variables; configure the production proxy separately.
-
 ## PVE setup
 
-1. In **Datacenter → Permissions → Users**, create a dedicated user, such as `dashboard@pve`.
-2. Add a user permission with the built-in `PVEAuditor` role, which provides the Audit privileges needed for monitoring. Use `/` with propagation for cluster-wide monitoring, or choose narrower VM or pool paths.
-3. For power controls, create a `DashboardPower` role containing only `VM.PowerMgmt`. Assign it to the same user on the target `/vms/<vmid>` or `/pool/<poolid>` path, enabling propagation for pools. Keep `PVEAuditor` alongside it when assigning both roles at the same path.
-4. In **Permissions → API Tokens**, create a token for that user. For this dedicated, permission-limited user, uncheck **Privilege Separation** so the token uses the user's permissions. Save the secret shown during creation.
+### PVE_TOKEN
 
-The full token value is `USER@REALM!TOKEN_ID=TOKEN_SECRET`. The proxy adds the `PVEAPIToken=` prefix. With privilege separation enabled, configure token ACLs as well.
+1. In the PVE web interface, open **Datacenter → Permissions → Users**, click **Add**, and create a dedicated user. For example, use `dashboard` as the username and `Proxmox VE authentication server` as the realm to create `dashboard@pve`.
+2. Open **Datacenter → Permissions** and add a user permission: select `dashboard@pve` as the user and the built-in `PVEAuditor` role. To monitor the entire cluster, select `/` as the path and enable **Propagate**.
+3. For power management, create `DashboardPower` under **Permissions → Roles**, selecting only `VM.PowerMgmt`; then assign this role to `dashboard@pve`.
+4. Open **Datacenter → Permissions → API Tokens**, click **Add**, select `dashboard@pve` as the user, enter `dashboard` as the token ID, uncheck **Privilege Separation**, and click **Add**. Save the secret shown only once in the dialog.
 
-Some detail endpoints require additional permissions or an available guest agent. The page retains successful data and shows errors for failed auxiliary reads. QEMU filesystem usage depends on the guest agent; configured disk capacity provides a fallback.
+The resulting PVE_TOKEN has the following format:
 
-### Resource pools
-
-Create pools under **Datacenter → Permissions → Pools**, then add guests as members. The dashboard uses pool IDs as group titles and pool comments as descriptions. Guests without a pool appear in the unassigned group; templates appear in a separate group at the end.
-
-## Settings and exports
-
-Use the top-right Settings button to adjust refresh intervals, resource visibility, VMID exclusions, display fields, thresholds, and data source. Saved settings apply to the current browser. The import/export tab supports browser configuration JSON and guest configuration TXT downloads.
-
-Guest configuration exports contain raw values and can include addresses, SSH public keys, Cloud-init credentials, and mount paths. Store these files privately and review them before sharing. Use demo data for public screenshots.
-
-## Verification
-
-```bash
-npm run verify
+```text
+dashboard@pve!dashboard=TOKEN_SECRET
 ```
 
-Runs lint, TypeScript checks, unit tests, a production build, and Playwright interaction and visual regression tests. Install the Playwright Chromium browser if it is not available:
+Set this value in the Caddy service environment or as `PVE_DASHBOARD_TOKEN` for local development.
 
-```bash
-npx playwright install chromium
-```
+### VM grouping
 
-To run browser tests separately, build first:
+VM/LXC groups in Lite Dashboard correspond to PVE **Resource Pools**:
 
-```bash
-npm run build
-npm run test:e2e
-```
+1. In the PVE web interface, open **Datacenter → Permissions → Pools** and click **Create**.
+2. Enter a pool ID, such as `development`, and a description in the comment field, such as `Development environment`, then save.
+3. Select the newly created pool in the resource tree on the left, open **Members**, click **Add**, and select the VMs or containers to include in the group.
+4. Return to Lite Dashboard and refresh the page to see the result.
 
-Playwright uses the production preview server. Review expected visual changes before updating screenshot baselines with `npm run test:visual:update`.
+Guests that do not belong to a resource pool appear in the **Unassigned resource pool** group. Templates appear in a separate **Templates** group.
 
-Implementation and deployment details are documented in [Architecture](docs/ARCHITECTURE.md), [Design](docs/DESIGN.md), and [Installation](docs/INSTALL.md) (Chinese).
+### Security
+
+This project does not provide access control. Anyone who can access the dashboard can exercise all permissions granted to the API token. Use it in a secure environment and keep the API token's permissions to the minimum required.
 
 ## License
 

@@ -22,6 +22,14 @@ npm run verify
 
 生产环境的 Token 保存在 Caddy 服务端，不应写入前端源码或构建产物。
 
+## GitHub Pages 演示站点
+
+仓库包含 `.github/workflows/pages.yml`。在 GitHub 仓库的 **Settings → Pages → Build and deployment** 中，将 **Source** 设为 **GitHub Actions**。
+
+推送到 `main` 时自动构建并部署，也可以在 **Actions → Deploy GitHub Pages → Run workflow** 手动触发。工作流使用 Node.js 24，执行 `npm ci` 和 `npm run build`，将 `dist/` 上传并部署到 `github-pages` 环境。部署结果链接显示在 workflow 的部署任务中。
+
+Vite 使用相对资源路径，支持 GitHub Pages 的仓库子路径。默认数据源为 `auto` 时，`*.github.io` 站点自动显示内置演示数据。使用自定义域名时，通过 `?data=mock` 或页面设置选择演示数据。GitHub Pages 提供静态页面；连接真实 PVE 的部署方式见本文的 Caddy 配置。
+
 ## 本地开发连接 PVE
 
 在项目根目录创建被 Git 忽略的 `.env.local`：
